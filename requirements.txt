@@ -1,0 +1,11 @@
+numpy
+pandas
+tensorflow
+scikit-learn
+Pillow (for image processing, used by 'tensorflow.keras.preprocessing.image')
+
+numpy==1.22.4
+pandas==1.4.2
+tensorflow==2.9.1
+scikit-learn==1.1.1
+Pillow==9.0.1
