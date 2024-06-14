@@ -1,3 +1,4 @@
+python==3.9
 absl-py==2.1.0
 astunparse==1.6.3
 blinker==1.8.2
@@ -47,4 +48,4 @@ typing_extensions==4.11.0
 urllib3==2.2.1
 Werkzeug==3.0.3
 wrapt==1.16.0
-python==3.9
+
