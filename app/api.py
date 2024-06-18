@@ -6,7 +6,7 @@ from tensorflow.keras.models import load_model
 from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-app = Flask(__name__)
+main = Blueprint('main', _name_)
 
 # Load the trained model for prediction
 model = load_model('C:/skinsavermodel/model.h5')
