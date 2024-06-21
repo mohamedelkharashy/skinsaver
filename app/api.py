@@ -1,12 +1,13 @@
 import os
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
+from werkzeug.utils import secure_filename
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.models import load_model
 from sklearn.metrics.pairwise import cosine_similarity
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-main = Blueprint('main', _name_)
+main = Blueprint('main', __name__)
 
 # Load the trained model for prediction
 model = load_model('C:/skinsavermodel/model.h5')
@@ -22,13 +23,13 @@ def extract_feature_vector(image_path):
 
 # Reference images for validation
 reference_images = {
-    'bcc': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0031585.jpg',
-    'vasc': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0028714.jpg',
-    'mel': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0032892.jpg',
-    'bkl': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0027419.jpg',
-    'nv': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0029981.jpg',
-    'akiec': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0026362.jpg',
-    'df': 'D:/final project/Skin Cancer/Skin Cancer1/ISIC_0025911.jpg'
+    'bcc': 'image/ISIC_0031585.jpg',
+    'vasc': 'image/ISIC_0028714.jpg',
+    'mel': 'image/ISIC_0032892.jpg',
+    'bkl': 'image/ISIC_0027419.jpg',
+    'nv': 'image/ISIC_0029981.jpg',
+    'akiec': 'image/ISIC_0026362.jpg',
+    'df': 'image/ISIC_0025911.jpg'
 }
 
 # Extract feature vectors for reference images
@@ -47,7 +48,7 @@ def load_and_preprocess_image(image_path):
     img_array = preprocess_input(img_array)
     return img_array
 
-@app.route('/predict', methods=['POST'])
+@main.route('/predict', methods=['POST'])
 def predict():
     if 'image_file' not in request.files:
         return jsonify({'error': 'Image file is required'}), 400
@@ -60,19 +61,20 @@ def predict():
     if image_file:
         try:
             # Ensure the upload directory exists
-            os.makedirs('uploads', exist_ok=True)
+            upload_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
 
             # Save the image file to the server
-            image_path = os.path.join('uploads', image_file.filename)
-            image_file.save(image_path)
+            file_path = os.path.join(upload_dir, secure_filename(image_file.filename))
+            image_file.save(file_path)
 
             # Validate if the image is a skin image
-            if not is_relevant(image_path, reference_vectors):
-                os.remove(image_path)
+            if not is_relevant(file_path, reference_vectors):
+                os.remove(file_path)
                 return jsonify({'error': 'The uploaded image is not a relevant skin image'}), 400
 
             # Preprocess the image
-            img_array = load_and_preprocess_image(image_path)
+            img_array = load_and_preprocess_image(file_path)
 
             # Make prediction
             prediction = model.predict(img_array)
@@ -81,12 +83,18 @@ def predict():
             prediction_label = 'Malignant' if prediction[0][0] > 0.5 else 'Benign'
 
             # Cleanup the saved image file
-            os.remove(image_path)
+            os.remove(file_path)
 
             return jsonify({'prediction': prediction_label})
 
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-if __name__ == '__main__':
+def create_app():
+    app = Flask(__name__)
+    app.register_blueprint(main)
+    return app
+
+if __name__ == "__main__":
+    app = create_app()
     app.run(debug=True)
